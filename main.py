@@ -2,8 +2,8 @@ import requests
 import time
 from bs4 import BeautifulSoup
 
-BASE_URL = "http://185.244.219.162/phpmyadmin"
-LOGIN_URL = f"{BASE_URL}/index.php?route=/"
+BASE_URL = "http://185.244.219.162/phpmyadmin" ## объединить
+LOGIN_URL = f"{BASE_URL}/index.php"
 SQL_URL = f"{BASE_URL}/index.php"
 
 USERNAME = "test"
