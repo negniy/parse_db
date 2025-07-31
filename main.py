@@ -1,13 +1,16 @@
+import os
 import requests
-import time
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+import pandas as pd
 
-BASE_URL = "http://185.244.219.162/phpmyadmin" ## объединить
-LOGIN_URL = f"{BASE_URL}/index.php"
-SQL_URL = f"{BASE_URL}/index.php"
+URL = "http://185.244.219.162/phpmyadmin/index.php"
 
-USERNAME = "test"
-PASSWORD = "JHFBdsyf2eg8*"
+load_dotenv(override=True)
+
+USERNAME = os.getenv("USERNAME")
+PASSWORD = os.getenv("PASSWORD")
+
 TOKEN = None
 SESSION = None
 
@@ -21,9 +24,9 @@ def login_to_phpmyadmin(session):
         "token": TOKEN
     }
 
-    response = session.post(LOGIN_URL, data=payload)
+    response = session.post(URL, data=payload)
 
-    if not response.history and response.history[0].status_code != 302:
+    if not response.history or response.history[0].status_code != 302:
         raise Exception("Авторизация не удалась")
     
     print("Успешный вход в phpMyAdmin")
@@ -46,7 +49,7 @@ def get_table(session):
         "pos": "0"
     }
 
-    response = session.get(SQL_URL, params=params)
+    response = session.get(URL, params=params)
 
 
     if response.status_code != 200:
@@ -54,6 +57,7 @@ def get_table(session):
     
     soup = BeautifulSoup(response.text, "html.parser")
     tbody = soup.find("tbody")
+    data = []
     if not tbody:
         print("Данные не найдены")
     else:
@@ -61,21 +65,28 @@ def get_table(session):
         for row in rows:
             columns = row.find_all("td")
             values = [col.get_text(strip=True) for col in columns if col.get("class") is None or "data" in col.get("class")]
-            print(values)
+            data.append(values)
         
-    return
+    return data
 
 def main():
     global SESSION
     global TOKEN
     
     session = requests.Session()
-    r = session.get(BASE_URL)
+    r = session.get(URL)
 
     SESSION = r.cookies.get("phpMyAdmin")
     TOKEN = get_token(r)
+    
     session = login_to_phpmyadmin(session=session)
-    get_table(session=session)
+    
+    data = get_table(session=session)
+    
+    columns = ["ID", "Имя"]
+    df = pd.DataFrame(data, columns=columns)
+    print("\nТаблица users:\n")
+    print(df.to_markdown(tablefmt="grid", index=False))
     
 
 if __name__ == "__main__":
